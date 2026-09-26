@@ -1,0 +1,10 @@
+fastapi>=0.110
+uvicorn[standard]>=0.27
+onnxruntime>=1.17
+pydantic>=2.5
+numpy>=1.26
+
+# Only needed to (re)export the sample model:
+# scikit-learn>=1.4
+# skl2onnx>=1.16
+# onnx>=1.15
