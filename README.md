@@ -1,106 +1,133 @@
 # Real-Time ML Inference API — Containerized Model Serving
 
-Production-style sketch of the CV project: a trained anomaly/classification model served as a real-time REST API with FastAPI, validated inputs via Pydantic, ONNX Runtime for fast inference, and Docker for reproducible deployment.
+A small, production-shaped service that loads an ONNX model once at startup and serves predictions over HTTP. Built to match the portfolio project of the same name: real-time inference, request validation, structured logging, and a reproducible Docker image you can run anywhere.
 
-The sample model is a generic sklearn classifier exported to ONNX (Iris-shaped, 4 features). Swap `models/model.onnx` for your own model without changing the API shape.
+The checked-in model is a generic multi-class classifier (4 float features) so you can clone, run, and swap in a real artifact later without rewriting the API.
 
-## Stack
+## What it does
 
-- Python
-- FastAPI
-- ONNX Runtime
-- Pydantic
-- Docker / docker-compose
-- scikit-learn + skl2onnx (export script only)
+- Loads `models/model.onnx` with **ONNX Runtime** during app startup
+- Exposes **`GET /health`** for liveness and model-ready status
+- Exposes **`POST /predict`** for a single feature vector (or extend to batch later)
+- Validates payloads with **Pydantic**
+- Returns the predicted label, optional class probabilities, and server-side `latency_ms`
+- Logs each prediction at INFO for easy debugging under load
 
-## Endpoints
+## Tech stack
 
-| Method | Path | Purpose |
-|--------|------|---------|
-| `GET` | `/health` | Liveness + whether the model loaded |
-| `POST` | `/predict` | Run inference on a feature vector |
+| Piece | Choice |
+|--------|--------|
+| API | FastAPI + Uvicorn |
+| Validation | Pydantic v2 |
+| Inference | ONNX Runtime (CPU) |
+| Packaging | Docker + docker-compose |
+| Sample export | scikit-learn → ONNX via `skl2onnx` (`scripts/export_model.py`) |
 
-### Example
+## Project layout
+
+```
+app/
+  main.py            # routes, lifespan, logging
+  model.py           # ONNX Runtime wrapper
+  schemas.py         # request / response models
+models/
+  model.onnx         # served artifact (sample classifier)
+scripts/
+  export_model.py    # rebuild the sample ONNX file
+Dockerfile
+docker-compose.yml
+requirements.txt
+```
+
+## Setup
+
+Requires Python 3.11+ (local) or Docker.
+
+```bash
+git clone https://github.com/anandubabu/inference-api.git
+cd inference-api
+
+python -m venv .venv
+source .venv/bin/activate          # Windows: .venv\Scripts\activate
+pip install -r requirements.txt
+```
+
+The sample model is already in `models/model.onnx`. To rebuild it:
+
+```bash
+pip install scikit-learn skl2onnx onnx
+python scripts/export_model.py
+```
+
+## Run locally
+
+```bash
+uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+```
+
+Open docs at http://localhost:8000/docs
+
+## Run with Docker
+
+```bash
+docker compose up --build
+```
+
+The API listens on http://localhost:8000. Compose includes a healthcheck against `/health`.
+
+## API examples
+
+### Health
 
 ```bash
 curl -s http://localhost:8000/health
-
-curl -s -X POST http://localhost:8000/predict \
-  -H 'Content-Type: application/json' \
-  -d '{"features":[5.1, 3.5, 1.4, 0.2]}'
 ```
 
-Response shape:
+```json
+{"status":"ok","model_loaded":true}
+```
+
+If the model file is missing, status is `"degraded"` and `model_loaded` is `false`.
+
+### Predict
+
+```bash
+curl -s -X POST http://localhost:8000/predict \
+  -H "Content-Type: application/json" \
+  -d '{"features":[5.1, 3.5, 1.4, 0.2]}'
+```
 
 ```json
 {
   "label": 0,
-  "probabilities": [0.97, 0.02, 0.01],
-  "latency_ms": 0.42
+  "probabilities": [0.98, 0.02, 0.0],
+  "latency_ms": 0.61
 }
 ```
 
-## Quick start (local)
+Wrong feature length returns HTTP 422. Model not loaded returns HTTP 503.
+
+## Swapping in your own model
+
+1. Export your model to ONNX (sklearn via `scripts/export_model.py`, or PyTorch/TensorFlow export).
+2. Place it at `models/model.onnx` (or set `MODEL_PATH`).
+3. Keep input as `float32` with shape `[batch, n_features]`, or adjust `app/model.py` to match your graph.
+4. Restart Uvicorn or rebuild the image.
+
+## Latency notes
+
+Each `/predict` response includes measured inference time in milliseconds. For a quick local sample:
 
 ```bash
-python -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
-pip install scikit-learn skl2onnx onnx   # only if you need to rebuild the model
-python scripts/export_model.py
-uvicorn app.main:app --reload --port 8000
-```
-
-## Docker
-
-```bash
-# rebuild the sample model first if models/model.onnx is missing
-python scripts/export_model.py
-
-docker compose up --build
-```
-
-API listens on `http://localhost:8000`.
-
-## Exporting your own model
-
-1. Train whatever you like in sklearn (or export from PyTorch/TF to ONNX).
-2. For sklearn: adapt `scripts/export_model.py` and write `models/model.onnx`.
-3. Keep the input name/`features` tensor as `float32 [batch, n_features]`, or update `app/model.py` to match your graph.
-4. Rebuild the image.
-
-## Logging and latency notes
-
-- Each `/predict` call logs `label` and `latency_ms` at INFO.
-- Response includes measured server-side inference latency (pre/post ONNX session).
-- For real-time validation, benchmark with something like:
-
-```bash
-# rough local check — not a substitute for load testing
 for i in $(seq 1 100); do
-  curl -s -o /dev/null -w '%{time_total}\n' -X POST http://localhost:8000/predict \
-    -H 'Content-Type: application/json' \
+  curl -s -o /dev/null -w "%{time_total}\n" -X POST http://localhost:8000/predict \
+    -H "Content-Type: application/json" \
     -d '{"features":[5.1, 3.5, 1.4, 0.2]}'
 done
 ```
 
-Capture p50/p95 of those times and requests-per-second under concurrent load (e.g. `hey` or `wrk`) when you need numbers for a write-up. ONNX Runtime quantization can cut latency and memory further for edge or high-QPS deployments — leave that as a follow-up once you have a real model.
-
-## Layout
-
-```
-app/
-  main.py       # FastAPI routes + lifespan model load
-  model.py      # ONNX Runtime wrapper
-  schemas.py    # Pydantic request/response models
-models/
-  model.onnx    # served artifact
-scripts/
-  export_model.py
-Dockerfile
-docker-compose.yml
-```
+Use a proper load tool (`hey`, `wrk`, or k6) when you need p50/p95 latency and requests-per-second for a write-up. ONNX Runtime quantization is a natural next step for tighter latency or memory budgets.
 
 ## License
 
-MIT (personal portfolio / interview demo).
+MIT — portfolio / interview demo.
