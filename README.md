@@ -1,17 +1,19 @@
 # Real-Time ML Inference API — Containerized Model Serving
 
-A small, production-shaped service that loads an ONNX model once at startup and serves predictions over HTTP. Built to match the portfolio project of the same name: real-time inference, request validation, structured logging, and a reproducible Docker image you can run anywhere.
+FastAPI service that serves **tabular / sensor ONNX models** for edge-style anomaly detection and signal pipelines — the same shape as the portfolio project on sensor preprocessing, Isolation Forest / tree baselines, and low-latency inference.
 
-The checked-in model is a generic multi-class classifier (4 float features) so you can clone, run, and swap in a real artifact later without rewriting the API.
+This is **not** an image-classifier demo. The request body is a flat feature vector (windowed sensor stats, FFT bins, scaled channels, etc.). Swap in your own `.onnx` from an embedded or edge training run and keep the same `/predict` contract.
 
 ## What it does
 
-- Loads `models/model.onnx` with **ONNX Runtime** during app startup
-- Exposes **`GET /health`** for liveness and model-ready status
-- Exposes **`POST /predict`** for a single feature vector (or extend to batch later)
-- Validates payloads with **Pydantic**
-- Returns the predicted label, optional class probabilities, and server-side `latency_ms`
-- Logs each prediction at INFO for easy debugging under load
+- Loads `models/model.onnx` once at startup with **ONNX Runtime** (CPU)
+- **`GET /health`** — liveness + whether the model is ready
+- **`POST /predict`** — infer on a feature vector; returns label, probabilities (when available), and `latency_ms`
+- **Pydantic** validation on inputs
+- **Docker / docker-compose** for reproducible deploys
+- Structured INFO logs per prediction
+
+Ideal fit for CV talking points: real-time sensor streams, anomaly flags, and portable edge serving without rewriting the API when the model changes.
 
 ## Tech stack
 
@@ -21,59 +23,38 @@ The checked-in model is a generic multi-class classifier (4 float features) so y
 | Validation | Pydantic v2 |
 | Inference | ONNX Runtime (CPU) |
 | Packaging | Docker + docker-compose |
-| Sample export | scikit-learn → ONNX via `skl2onnx` (`scripts/export_model.py`) |
+| Sample export | scikit-learn → ONNX (`scripts/export_model.py`) |
 
-## Project layout
-
-```
-app/
-  main.py            # routes, lifespan, logging
-  model.py           # ONNX Runtime wrapper
-  schemas.py         # request / response models
-models/
-  model.onnx         # served artifact (sample classifier)
-scripts/
-  export_model.py    # rebuild the sample ONNX file
-Dockerfile
-docker-compose.yml
-requirements.txt
-```
-
-## Setup
-
-Requires Python 3.11+ (local) or Docker.
+## Quick start
 
 ```bash
 git clone https://github.com/anandubabu/inference-api.git
 cd inference-api
-
-python -m venv .venv
-source .venv/bin/activate          # Windows: .venv\Scripts\activate
-pip install -r requirements.txt
+make install
+make run
 ```
 
-The sample model is already in `models/model.onnx`. To rebuild it:
+API: http://localhost:8000 — docs at `/docs`.
 
-```bash
-pip install scikit-learn skl2onnx onnx
-python scripts/export_model.py
-```
-
-## Run locally
-
-```bash
-uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
-```
-
-Open docs at http://localhost:8000/docs
-
-## Run with Docker
+### Docker
 
 ```bash
 docker compose up --build
 ```
 
-The API listens on http://localhost:8000. Compose includes a healthcheck against `/health`.
+## Bring your own ONNX (one command)
+
+Drop any compatible classifier/regressor ONNX file (input: `float32 [batch, n_features]`):
+
+```bash
+make use-model MODEL=/path/to/your_anomaly_model.onnx
+make run
+# or: docker compose up --build
+```
+
+Under the hood this runs `scripts/use_model.sh`, which copies your file to `models/model.onnx`. Restart the process (or rebuild the image) so the new weights load.
+
+Feature length must match the model. If you trained on 32 window features, send 32 floats in `features`.
 
 ## API examples
 
@@ -81,15 +62,10 @@ The API listens on http://localhost:8000. Compose includes a healthcheck against
 
 ```bash
 curl -s http://localhost:8000/health
+# {"status":"ok","model_loaded":true}
 ```
 
-```json
-{"status":"ok","model_loaded":true}
-```
-
-If the model file is missing, status is `"degraded"` and `model_loaded` is `false`.
-
-### Predict
+### Predict (sensor-style feature vector)
 
 ```bash
 curl -s -X POST http://localhost:8000/predict \
@@ -101,33 +77,58 @@ curl -s -X POST http://localhost:8000/predict \
 {
   "label": 0,
   "probabilities": [0.98, 0.02, 0.0],
-  "latency_ms": 0.61
+  "latency_ms": 0.05
 }
 ```
 
-Wrong feature length returns HTTP 422. Model not loaded returns HTTP 503.
+Wrong length → HTTP 422. Model missing → HTTP 503 / health `degraded`.
 
-## Swapping in your own model
+## Latency benchmarks (measured)
 
-1. Export your model to ONNX (sklearn via `scripts/export_model.py`, or PyTorch/TensorFlow export).
-2. Place it at `models/model.onnx` (or set `MODEL_PATH`).
-3. Keep input as `float32` with shape `[batch, n_features]`, or adjust `app/model.py` to match your graph.
-4. Restart Uvicorn or rebuild the image.
+Host: Linux x86_64 CPU VM used to build this repo (single client, warmed up). Sample model: 4-feature sklearn → ONNX classifier. **n = 200** after 20 warmup calls.
 
-## Latency notes
+| Metric | p50 | p95 |
+|--------|-----|-----|
+| End-to-end HTTP `/predict` (ms) | **0.69** | **1.24** |
+| Server-side ONNX `latency_ms` (ms) | **0.05** | **0.08** |
 
-Each `/predict` response includes measured inference time in milliseconds. For a quick local sample:
+Rough single-client throughput from e2e p50: ~1400 req/s on this host. These numbers are for a tiny tabular model on a quiet CPU box — not a cloud free-tier SLA and not an image network. Re-run on your machine (or free-tier host) with the commands below and replace the table.
+
+### Reproduce benchmarks
 
 ```bash
-for i in $(seq 1 100); do
-  curl -s -o /dev/null -w "%{time_total}\n" -X POST http://localhost:8000/predict \
+make run          # terminal 1
+make bench        # terminal 2 — defaults to 200 requests
+# custom feature width after swapping models:
+. .venv/bin/activate && python scripts/bench.py --features 0.1,0.2,...,0.N --n 500
+```
+
+Or a raw loop:
+
+```bash
+for i in $(seq 1 200); do
+  curl -s -o /dev/null -w "%{time_total}\n" -X POST http://127.0.0.1:8000/predict \
     -H "Content-Type: application/json" \
-    -d '{"features":[5.1, 3.5, 1.4, 0.2]}'
+    -d '{"features":[5.1,3.5,1.4,0.2]}'
 done
 ```
 
-Use a proper load tool (`hey`, `wrk`, or k6) when you need p50/p95 latency and requests-per-second for a write-up. ONNX Runtime quantization is a natural next step for tighter latency or memory budgets.
+For concurrent p50/p95 and RPS under load, use `hey` or `k6` against `/predict`.
+
+## Layout
+
+```
+app/                 # FastAPI app, ONNX wrapper, schemas
+models/model.onnx    # served artifact (sample or your swap-in)
+scripts/
+  export_model.py    # rebuild sample ONNX
+  use_model.sh       # bring-your-own ONNX
+  bench.py           # p50 / p95 helper
+Makefile
+Dockerfile
+docker-compose.yml
+```
 
 ## License
 
-MIT — portfolio / interview demo.
+MIT — portfolio / interview demo for embedded and edge ML serving.
