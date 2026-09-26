@@ -4,7 +4,8 @@ WORKDIR /app
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
-    MODEL_PATH=/app/models/model.onnx
+    MODEL_PATH=/app/models/model.onnx \
+    PORT=8000
 
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
@@ -14,5 +15,5 @@ COPY models ./models
 
 EXPOSE 8000
 
-# Single worker is enough for a demo; raise workers behind a reverse proxy in prod
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+# Honor $PORT from the host (Render/Railway/Fly)
+CMD ["sh", "-c", "uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}"]

@@ -1,0 +1,9 @@
+services:
+  - type: web
+    name: inference-api
+    runtime: docker
+    plan: free
+    healthCheckPath: /health
+    envVars:
+      - key: LOG_LEVEL
+        value: INFO
