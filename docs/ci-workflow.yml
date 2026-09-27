@@ -1,0 +1,36 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements-dev.txt
+
+      - name: Ensure model artifacts exist
+        run: |
+          if [ ! -f models/model.onnx ] || [ ! -f models/model_meta.json ]; then
+            python scripts/train_export.py
+            python scripts/quantize_onnx.py
+          fi
+          ls -la models/
+
+      - name: Pytest
+        run: python -m pytest -q
+
+      - name: Docker build
+        run: docker build -t inference-api:ci .

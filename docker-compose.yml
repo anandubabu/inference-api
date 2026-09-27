@@ -7,7 +7,15 @@ services:
       LOG_LEVEL: INFO
       MODEL_PATH: /app/models/model.onnx
     healthcheck:
-      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health')"]
+      # urllib raises on non-200, so 503 (model unavailable) marks the container unhealthy
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=4)",
+        ]
       interval: 15s
       timeout: 5s
       retries: 3
+      start_period: 10s

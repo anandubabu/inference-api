@@ -1,0 +1,77 @@
+{
+  "file_sizes_bytes": {
+    "fp32": 1959320,
+    "int8": 2182044
+  },
+  "file_size_ratio_int8_over_fp32": 1.1136741318416594,
+  "new_op_types": [],
+  "ops_fp32": {
+    "Scaler": 1,
+    "Gather": 200,
+    "TreeEnsembleRegressor": 200,
+    "Cast": 801,
+    "LabelEncoder": 400,
+    "Reshape": 400,
+    "Equal": 200,
+    "Greater": 200,
+    "Mul": 801,
+    "Add": 1202,
+    "Max": 600,
+    "Div": 201,
+    "Log": 200,
+    "Sum": 1,
+    "Neg": 2,
+    "Pow": 1,
+    "Less": 1
+  },
+  "ops_int8": {
+    "Scaler": 1,
+    "Gather": 200,
+    "TreeEnsembleRegressor": 200,
+    "Cast": 801,
+    "LabelEncoder": 400,
+    "Reshape": 400,
+    "Equal": 200,
+    "Greater": 200,
+    "Mul": 801,
+    "Add": 1202,
+    "Max": 600,
+    "Log": 200,
+    "Div": 201,
+    "Sum": 1,
+    "Neg": 2,
+    "Pow": 1,
+    "Less": 1
+  },
+  "score_diff_fp32_vs_int8": {
+    "max_abs": 0.0,
+    "mean_abs": 0.0,
+    "p95_abs": 0.0
+  },
+  "label_agreement": 1.0,
+  "metrics_fp32": {
+    "precision": 0.966183574879227,
+    "recall": 1.0,
+    "f1": 0.9828009828009828
+  },
+  "metrics_int8": {
+    "precision": 0.966183574879227,
+    "recall": 1.0,
+    "f1": 0.9828009828009828
+  },
+  "batch_vs_single_max_abs_int8": 0.0,
+  "batch_vs_single_max_abs_fp32": 0.0,
+  "latency_ms_median": {
+    "fp32_batch1": 1.961685498827137,
+    "int8_batch1": 1.9865889953507576,
+    "fp32_batch32": 3.3051169993996155,
+    "int8_batch32": 3.3189304995175917
+  },
+  "recommend_default": "FP32",
+  "reasons": [
+    "Graph op types did not change in an obvious quantized way.",
+    "Single-row median latency INT8 (1.987 ms) is not clearly faster than FP32 (1.962 ms)."
+  ],
+  "rss_note": "Current process RSS after loading both sessions: 227.3 MiB. This is NOT a controlled A/B of FP32-only vs INT8-only memory; do not claim memory reduction from file size alone.",
+  "default_note": "Default model.onnx kept as FP32 copy."
+}

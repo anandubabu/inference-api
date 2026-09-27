@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# Drop in your own ONNX file and (re)start the API against it.
+# Drop in a compatible ONNX anomaly model (float32 [N,F], score_samples output).
+# Also update models/threshold.json / model_meta.json to match.
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 SRC="${1:-}"
@@ -14,4 +15,4 @@ fi
 mkdir -p "$ROOT/models"
 cp -f "$SRC" "$ROOT/models/model.onnx"
 echo "Installed $SRC -> models/model.onnx"
-echo "Start with: make run   or   docker compose up --build"
+echo "Ensure threshold.json / model_meta.json match this model, then: make run"

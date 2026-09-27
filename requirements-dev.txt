@@ -1,0 +1,7 @@
+-r requirements.txt
+pytest>=8.0
+httpx>=0.27
+scikit-learn>=1.4
+skl2onnx>=1.16
+onnx>=1.15
+psutil>=5.9

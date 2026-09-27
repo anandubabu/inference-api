@@ -1,8 +1,12 @@
-.PHONY: install run docker export use-model bench
+.PHONY: install install-dev run docker train quantize bench test
 
 install:
-	python -m venv .venv
+	python3 -m venv .venv
 	. .venv/bin/activate && pip install -r requirements.txt
+
+install-dev:
+	python3 -m venv .venv
+	. .venv/bin/activate && pip install -r requirements-dev.txt
 
 run:
 	. .venv/bin/activate && uvicorn app.main:app --host 0.0.0.0 --port 8000
@@ -10,13 +14,19 @@ run:
 docker:
 	docker compose up --build
 
-export:
-	. .venv/bin/activate && python scripts/export_model.py
+train:
+	. .venv/bin/activate && python scripts/train_export.py
 
-# One-command bring-your-own ONNX: make use-model MODEL=./my_model.onnx
-use-model:
-	@test -n "$(MODEL)" || (echo 'Usage: make use-model MODEL=/path/to/model.onnx' >&2; exit 1)
-	./scripts/use_model.sh "$(MODEL)"
+quantize:
+	. .venv/bin/activate && python scripts/quantize_onnx.py
 
 bench:
 	. .venv/bin/activate && python scripts/bench.py
+
+test:
+	. .venv/bin/activate && python -m pytest -q
+
+# Optional: copy an external ONNX that matches the anomaly contract
+use-model:
+	@test -n "$(MODEL)" || (echo 'Usage: make use-model MODEL=/path/to/model.onnx' >&2; exit 1)
+	./scripts/use_model.sh "$(MODEL)"

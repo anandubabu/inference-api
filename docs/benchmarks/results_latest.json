@@ -1,0 +1,108 @@
+{
+  "meta": {
+    "timestamp_utc": "2026-09-27T21:24:37.959199+00:00",
+    "hardware": {
+      "uname": "Linux grok-bot-vm-453824380 6.12.94+ #1 SMP PREEMPT_DYNAMIC Thu Sep 24 16:04:37 UTC 2026 x86_64 GNU/Linux",
+      "processor": "",
+      "machine": "x86_64",
+      "system": "Linux",
+      "python": "3.13.5 (main, Aug 10 2026, 12:06:59) [GCC 14.2.0]",
+      "cpu_count": 8
+    },
+    "dependency_versions": {
+      "fastapi": "0.141.1",
+      "onnxruntime": "1.30.0",
+      "pydantic": "2.13.5",
+      "numpy": "2.5.3",
+      "sklearn": "1.9.1",
+      "uvicorn": "0.54.0"
+    },
+    "logging": {
+      "LOG_LEVEL": "INFO"
+    },
+    "notes": [
+      "Warmup requests excluded from latency samples and RPS denominator.",
+      "RPS = completed_ok / total_elapsed_seconds over the measured window.",
+      "Not a hard real-time guarantee; single-host lab measurement only.",
+      "Sequential and concurrent runs are reported separately."
+    ],
+    "config": {
+      "n": 200,
+      "warmup": 20,
+      "timeout_s": 5.0,
+      "concurrency": 8,
+      "batch_size": 16,
+      "n_features": 8,
+      "base": "http://127.0.0.1:8000"
+    }
+  },
+  "runs": [
+    {
+      "name": "predict_sequential",
+      "requested": 200,
+      "completed_ok": 200,
+      "failures": 0,
+      "failure_samples": [],
+      "total_elapsed_seconds": 0.7333756509979139,
+      "rps": 272.7115356609636,
+      "e2e_ms": {
+        "p50": 3.4800334979081526,
+        "p95": 4.684838149842108,
+        "mean": 3.6477971000567777
+      },
+      "server_latency_ms": {
+        "p50": 2.144,
+        "p95": 3.3001,
+        "mean": 2.2672399999999997
+      },
+      "mode": "sequential",
+      "endpoint": "/predict",
+      "batch_size": 1
+    },
+    {
+      "name": "predict_concurrent",
+      "requested": 200,
+      "completed_ok": 200,
+      "failures": 0,
+      "failure_samples": [],
+      "total_elapsed_seconds": 0.22091738099697977,
+      "rps": 905.3158203189737,
+      "e2e_ms": {
+        "p50": 8.221015003073262,
+        "p95": 11.836590004531903,
+        "mean": 8.58947271015495
+      },
+      "server_latency_ms": {
+        "p50": 3.504,
+        "p95": 5.914000000000001,
+        "mean": 3.757145
+      },
+      "mode": "concurrent",
+      "endpoint": "/predict",
+      "batch_size": 1,
+      "concurrency": 8
+    },
+    {
+      "name": "predict_batch_sequential",
+      "requested": 50,
+      "completed_ok": 50,
+      "failures": 0,
+      "failure_samples": [],
+      "total_elapsed_seconds": 0.2352924829974654,
+      "rps": 212.5014763031703,
+      "e2e_ms": {
+        "p50": 4.55696900098701,
+        "p95": 5.484962649643421,
+        "mean": 4.66894986006082
+      },
+      "server_latency_ms": {
+        "p50": 2.858,
+        "p95": 3.82795,
+        "mean": 3.0768400000000002
+      },
+      "mode": "sequential",
+      "endpoint": "/predict/batch",
+      "batch_size": 16
+    }
+  ]
+}

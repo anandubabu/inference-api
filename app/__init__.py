@@ -1,1 +1,1 @@
-# Real-time ML inference API
+"""Real-time ML anomaly inference API."""

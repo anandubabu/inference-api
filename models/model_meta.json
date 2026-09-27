@@ -1,0 +1,103 @@
+{
+  "model_type": "IsolationForest",
+  "pipeline": [
+    "StandardScaler",
+    "IsolationForest"
+  ],
+  "n_features": 8,
+  "feature_names": [
+    "mean_ax",
+    "std_ax",
+    "mean_ay",
+    "std_ay",
+    "mean_az",
+    "std_az",
+    "rms_vibration",
+    "temp_c"
+  ],
+  "feature_descriptions": {
+    "mean_ax": "Mean acceleration on X over a synthetic window",
+    "std_ax": "Std of acceleration on X",
+    "mean_ay": "Mean acceleration on Y",
+    "std_ay": "Std of acceleration on Y",
+    "mean_az": "Mean acceleration on Z (gravity-ish ~9.8 in normals)",
+    "std_az": "Std of acceleration on Z",
+    "rms_vibration": "RMS vibration magnitude",
+    "temp_c": "Temperature in Celsius"
+  },
+  "data_source": "synthetic_only",
+  "data_disclaimer": "All training/calibration/eval data is synthetically generated with a fixed RNG seed. It is not from hardware, sensors in the field, an internship, or an employer.",
+  "rng_seed": 42,
+  "train_size_normal_only": 4000,
+  "calibration_size_normal_only": 1000,
+  "eval_size": {
+    "normal": 800,
+    "anomaly": 200
+  },
+  "threshold": 0.5658856076002121,
+  "threshold_quantile_on_calibration_normals": 0.99,
+  "score_polarity": "higher_more_anomalous",
+  "score_definition": "anomaly_score is higher when more anomalous. Serving reads ONNX tensor 'score_samples' and applies anomaly_score = -raw (negate=True). is_anomaly = (anomaly_score >= threshold). These values are NOT class probabilities.",
+  "onnx_input_name": "features",
+  "onnx_input_shape": [
+    null,
+    8
+  ],
+  "onnx_input_dtype": "float32",
+  "onnx_outputs": [
+    {
+      "name": "label",
+      "shape": [
+        null,
+        1
+      ],
+      "type": "tensor(int64)"
+    },
+    {
+      "name": "scores",
+      "shape": [
+        null,
+        1
+      ],
+      "type": "tensor(float)"
+    },
+    {
+      "name": "score_samples",
+      "shape": [
+        null,
+        1
+      ],
+      "type": "tensor(float)"
+    }
+  ],
+  "onnx_score_tensor": "score_samples",
+  "onnx_raw_score_polarity": "lower_more_anomalous_like_score_samples",
+  "serving_negate_raw_score": true,
+  "default_artifact": "model.onnx",
+  "artifacts": {
+    "model.onnx": "default served model (FP32 copy unless switched)",
+    "model_fp32.onnx": "FP32 ONNX export",
+    "model_int8.onnx": "INT8 dynamic-quantized (see QUANTIZATION.md)",
+    "sklearn_pipeline.pkl": "sklearn Pipeline for agreement tests",
+    "eval_data.npz": "synthetic eval + calibration arrays",
+    "threshold.json": "threshold + score polarity for serving",
+    "model_meta.json": "full training / ONNX contract metadata"
+  },
+  "metrics_sklearn_path": {
+    "precision": 0.966183574879227,
+    "recall": 1.0,
+    "f1": 0.9828009828009828
+  },
+  "metrics_onnx_path": {
+    "precision": 0.966183574879227,
+    "recall": 1.0,
+    "f1": 0.9828009828009828,
+    "max_abs_score_diff_vs_sklearn": 2.271195495562317e-07
+  },
+  "isolation_forest_params": {
+    "n_estimators": 200,
+    "contamination": "auto",
+    "max_samples": 256,
+    "random_state": 42
+  }
+}
