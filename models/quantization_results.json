@@ -1,9 +1,9 @@
 {
   "file_sizes_bytes": {
-    "fp32": 1959320,
-    "int8": 2182044
+    "fp32": 1941382,
+    "int8": 2164106
   },
-  "file_size_ratio_int8_over_fp32": 1.1136741318416594,
+  "file_size_ratio_int8_over_fp32": 1.1147244591739287,
   "new_op_types": [],
   "ops_fp32": {
     "Scaler": 1,
@@ -50,27 +50,27 @@
   },
   "label_agreement": 1.0,
   "metrics_fp32": {
-    "precision": 0.966183574879227,
+    "precision": 0.9615384615384616,
     "recall": 1.0,
-    "f1": 0.9828009828009828
+    "f1": 0.9803921568627451
   },
   "metrics_int8": {
-    "precision": 0.966183574879227,
+    "precision": 0.9615384615384616,
     "recall": 1.0,
-    "f1": 0.9828009828009828
+    "f1": 0.9803921568627451
   },
   "batch_vs_single_max_abs_int8": 0.0,
   "batch_vs_single_max_abs_fp32": 0.0,
   "latency_ms_median": {
-    "fp32_batch1": 1.961685498827137,
-    "int8_batch1": 1.9865889953507576,
-    "fp32_batch32": 3.3051169993996155,
-    "int8_batch32": 3.3189304995175917
+    "fp32_batch1": 1.9653764975373633,
+    "int8_batch1": 2.0828710003115702,
+    "fp32_batch32": 3.2166705022973474,
+    "int8_batch32": 3.3537670024088584
   },
   "recommend_default": "FP32",
   "reasons": [
     "Graph op types did not change in an obvious quantized way.",
-    "Single-row median latency INT8 (1.987 ms) is not clearly faster than FP32 (1.962 ms)."
+    "Single-row median latency INT8 (2.083 ms) is not clearly faster than FP32 (1.965 ms)."
   ],
   "rss_note": "Current process RSS after loading both sessions: 227.3 MiB. This is NOT a controlled A/B of FP32-only vs INT8-only memory; do not claim memory reduction from file size alone.",
   "default_note": "Default model.onnx kept as FP32 copy."

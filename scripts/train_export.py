@@ -44,7 +44,7 @@ FEATURE_NAMES = [
     "temp_c",
 ]
 N_FEATURES = len(FEATURE_NAMES)
-RNG_SEED = 42
+RNG_SEED = 47
 
 
 def generate_synthetic(

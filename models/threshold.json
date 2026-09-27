@@ -1,5 +1,5 @@
 {
-  "threshold": 0.5658856076002121,
+  "threshold": 0.5631324452161789,
   "score_polarity": "higher_more_anomalous",
   "serving_negate_raw_score": true,
   "onnx_score_tensor": "score_samples",

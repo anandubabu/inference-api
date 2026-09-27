@@ -27,14 +27,14 @@
   },
   "data_source": "synthetic_only",
   "data_disclaimer": "All training/calibration/eval data is synthetically generated with a fixed RNG seed. It is not from hardware, sensors in the field, an internship, or an employer.",
-  "rng_seed": 42,
+  "rng_seed": 47,
   "train_size_normal_only": 4000,
   "calibration_size_normal_only": 1000,
   "eval_size": {
     "normal": 800,
     "anomaly": 200
   },
-  "threshold": 0.5658856076002121,
+  "threshold": 0.5631324452161789,
   "threshold_quantile_on_calibration_normals": 0.99,
   "score_polarity": "higher_more_anomalous",
   "score_definition": "anomaly_score is higher when more anomalous. Serving reads ONNX tensor 'score_samples' and applies anomaly_score = -raw (negate=True). is_anomaly = (anomaly_score >= threshold). These values are NOT class probabilities.",
@@ -84,20 +84,20 @@
     "model_meta.json": "full training / ONNX contract metadata"
   },
   "metrics_sklearn_path": {
-    "precision": 0.966183574879227,
+    "precision": 0.9615384615384616,
     "recall": 1.0,
-    "f1": 0.9828009828009828
+    "f1": 0.9803921568627451
   },
   "metrics_onnx_path": {
-    "precision": 0.966183574879227,
+    "precision": 0.9615384615384616,
     "recall": 1.0,
-    "f1": 0.9828009828009828,
-    "max_abs_score_diff_vs_sklearn": 2.271195495562317e-07
+    "f1": 0.9803921568627451,
+    "max_abs_score_diff_vs_sklearn": 2.459464432114089e-07
   },
   "isolation_forest_params": {
     "n_estimators": 200,
     "contamination": "auto",
     "max_samples": 256,
-    "random_state": 42
+    "random_state": 47
   }
 }
